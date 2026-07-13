@@ -8,30 +8,22 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
--- Ajuste calibrado para a sua tela
+-- Voltado para 50 conforme você pediu (ajuste calibrado para a sua tela)
 local CLICK_OFFSET_Y = 50 
 
 if _G.farmLoopRunning then return end
 _G.farmLoopRunning = true
 
--- Proteção inteligente contra falhas no teleporte
-TeleportService.TeleportInitFailed:Connect(function(plr, result, errorMessage)
-    if plr == LocalPlayer then
-        task.wait(1.5)
-        TeleportService:Teleport(game.PlaceId)
-    end
-end)
-
 local queueteleport = queue_on_teleport or (syn and syn.queue_on_teleport) or (fluxus and fluxus.queue_on_teleport)
 
--- Baixando o script específico da sua resolução pós-teleporte
+-- Link atualizado para o seu repositório de 1366x768
 Players.LocalPlayer.OnTeleport:Connect(function(State)
     if queueteleport then
         queueteleport("loadstring(game:HttpGet('https://raw.githubusercontent.com/cagabostafeia/Havoc-script-auto-farm/refs/heads/main/Havoc-main-1366x768'))()")
     end
 end)
 
--- Função de clique com suporte ao seu customOffset
+-- Função do seu script rápido
 local function clickObject(obj, customOffset)
 	if not obj or not obj:IsA("GuiObject") then return end
 	if obj:IsA("GuiButton") then
@@ -42,6 +34,7 @@ local function clickObject(obj, customOffset)
 	end
 	
 	local currentOffset = customOffset or CLICK_OFFSET_Y
+	
 	local x = obj.AbsolutePosition.X + obj.AbsoluteSize.X / 2
 	local y = obj.AbsolutePosition.Y + obj.AbsoluteSize.Y / 2 + currentOffset
 	pcall(function()
@@ -88,7 +81,7 @@ local function clickCenter()
 	end)
 end
 
--- Organizador de Notas de Dinheiro (Stacker)
+-- Organizador de Notas (Adicionado sem afetar a velocidade do loop principal)
 local function organizeCash()
 	local storage = game:GetService("ReplicatedStorage"):FindFirstChild("Storage")
 	local gridItemStorage = storage and storage:FindFirstChild("GridItemStorage")
@@ -134,7 +127,7 @@ local function organizeCash()
 	end
 end
 
--- Função de Venda Completa e Identica à Oficial
+-- Sua função SellAll original, mega rápida
 local function sellAll()
 	local ui = PlayerGui:FindFirstChild("UI")
 	if not ui then return end
@@ -159,7 +152,6 @@ local function sellAll()
 	local realsellbutton = trader:FindFirstChild("dealButtonFrame") and trader.dealButtonFrame:FindFirstChild("dealButton")
 	if not tradesellswitch or not realsellbutton then return end
 	
-	-- Aba de Venda
 	for i = 1, 2 do
 		clickObject(tradesellswitch, CLICK_OFFSET_Y + 5)
 		task.wait(0.8) 
@@ -167,25 +159,23 @@ local function sellAll()
 	task.wait(0.5) 
 
 	local playerContainer = backpack:FindFirstChild("player")
-	if playerContainer then
-		local pocket = nil
-		for _, child in ipairs(playerContainer:GetChildren()) do
-			if child:IsA("Frame") and child.Name == "inventoryFrame" and child:GetAttribute("childrens") == 8 then
-				pocket = child
-				break
-			end
+	if not playerContainer then return end
+	local pocket = nil
+	for _, child in ipairs(playerContainer:GetChildren()) do
+		if child:IsA("Frame") and child.Name == "inventoryFrame" and child:GetAttribute("childrens") == 8 then
+			pocket = child
+			break
 		end
-		
-		if pocket then
-			local itemsContainer = pocket:FindFirstChild("items") or pocket
-			for _, itemFrame in ipairs(itemsContainer:GetChildren()) do
-				if itemFrame:IsA("Frame") then
-					local button = itemFrame:FindFirstChild("button")
-					if button then
-						clickObject(button)
-						task.wait(0.04)
-					end
-				end
+	end
+	
+	if not pocket then return end
+	local itemsContainer = pocket:FindFirstChild("items") or pocket
+	for _, itemFrame in ipairs(itemsContainer:GetChildren()) do
+		if itemFrame:IsA("Frame") then
+			local button = itemFrame:FindFirstChild("button")
+			if button then
+				clickObject(button)
+				task.wait(0.04)
 			end
 		end
 	end
@@ -248,7 +238,7 @@ local function waitForMainMenu()
 	end
 end
 
--- Loop Principal Atualizado com Janela Dinâmica de 3.5 segundos
+-- Loop Principal
 while true do
 	local lobbyBottom = waitForMainMenu()
 	for _ = 1, 5 do
@@ -283,28 +273,27 @@ while true do
 		dialogueFrame = PlayerGui:FindFirstChild("UI") and PlayerGui.UI:FindFirstChild("temp") and PlayerGui.UI.temp:FindFirstChild("dialogueFrame")
 	end
 	
-	-- 1. Finaliza a venda dos itens
+	-- 1. Vende rápido
 	sellAll()
 
-	-- INÍCIO DO CRONÔMETRO DE 3.5 SEGUNDOS
-	local tempoInicio Venda = os.clock()
+	-- 2. Inicia o relógio assim que clica no botão de vender
+	local tempoInicioVenda = os.clock()
 
-	-- 2. Aguarda 0.4s rápidos para o servidor processar a aparição do dinheiro na Bag
+	-- 3. Pequeno delay pra garantir que o dinheiro entrou no inventário
 	task.wait(0.4)
-
-	-- 3. Roda a organização das notas de dinheiro
-	organizeCash()
 	
-	-- 4. Calcula e consome o restante do tempo para fechar EXATAMENTE 3.5 segundos pós-venda
+	-- 4. Organiza a grana
+	organizeCash()
+
+	-- 5. Calcula exatamente o tempo que passou desde que vendeu e espera o resto até dar 3.5 segundos
 	local tempoDecorrido = os.clock() - tempoInicioVenda
 	local tempoRestante = 3.5 - tempoDecorrido
+	
 	if tempoRestante > 0 then
 		task.wait(tempoRestante)
 	end
 
-	-- 5. Dispara o teleporte seguro com os dados salvos e dinheiro organizado
-	print("[FARM] 3.5 segundos concluídos! Inventário limpo. Trocando de servidor...")
+	-- 6. Executa o teleporte cravado nos 3.5 segundos
 	TeleportService:Teleport(game.PlaceId)
-	
-	task.wait(60)
+	task.wait(5)
 end

@@ -11,27 +11,10 @@ local Workspace = game:GetService("Workspace")
 -- Configuração de tela para 1920x1080 com Offset 50
 local CLICK_OFFSET_Y = 50 
 
--- [CONTROLE DE PARTIDAS / TELEPORTES CORRIGIDO PARA 3]
-local countFile = "farm_teleport_count.txt"
-local currentCount = 0
-
-pcall(function()
-    if isfile and readfile and isfile(countFile) then
-        currentCount = tonumber(readfile(countFile)) or 0
-    end
-end)
-
-currentCount = currentCount + 1
-
-pcall(function()
-    if writefile then
-        writefile(countFile, tostring(currentCount))
-    end
-end)
-
 if _G.farmLoopRunning then return end
 _G.farmLoopRunning = true
 
+-- [NOVO LINK DO GITHUB PARA O SERVER HOP]
 local queueteleport = queue_on_teleport or (syn and syn.queue_on_teleport) or (fluxus and fluxus.queue_on_teleport)
 
 Players.LocalPlayer.OnTeleport:Connect(function(State)
@@ -128,7 +111,7 @@ local function organizeCash()
 		end
 	end
 	
-	-- Mescla os blocos fragmentados usando a lógica aprovada no seu teste
+	-- Mescla os blocos fragmentados usando a lógica aprovada
 	if #cashItems > 1 then
 		local target = cashItems[1]
 		
@@ -138,7 +121,7 @@ local function organizeCash()
 				pcall(function()
 					inventoryFunction:InvokeServer("stackItem", source, target)
 				end)
-				task.wait(0.2) -- Delay seguro do teste para evitar kick
+				task.wait(0.2) -- Delay seguro para evitar kick
 				
 				-- Se o bloco destino lotou, o atual vira o novo destino
 				if source and source.Parent then
@@ -294,19 +277,17 @@ while true do
 		dialogueFrame = PlayerGui:FindFirstChild("UI") and PlayerGui.UI:FindFirstChild("temp") and PlayerGui.UI.temp:FindFirstChild("dialogueFrame")
 	end
 	
-	-- Vende todos os itens coletados na partida atual
+	-- 1. VENDE TUDO
 	sellAll()
 
-	-- [NOVA LÓGICA: SE FOR A 3ª PARTIDA, JUNTA O DINHEIRO ANTES DO SERVER HOP]
-	if currentCount >= 3 then
-		organizeCash()
-		task.wait(0.5)
-		pcall(function()
-			if writefile then writefile(countFile, "0") end -- Reseta o contador para iniciar um novo ciclo
-		end)
-	end
+	-- 2. ESPERA O SERVIDOR PROCESSAR A VENDA
+	task.wait(1.5)
 
-	-- Executa o teleporte para mudar de servidor e reiniciar o ciclo
+	-- 3. ORGANIZA O DINHEIRO (RODA TODA VEZ AGORA)
+	organizeCash()
+	task.wait(0.5)
+
+	-- 4. SERVER HOP PARA O GITHUB REINICIAR O CICLO
 	TeleportService:Teleport(game.PlaceId)
 	task.wait(5)
 end

@@ -24,7 +24,7 @@ end)
 
 local queueteleport = queue_on_teleport or (syn and syn.queue_on_teleport) or (fluxus and fluxus.queue_on_teleport)
 
--- CORRIGIDO: Agora baixando o script específico da sua resolução pós-teleporte
+-- Baixando o script específico da sua resolução pós-teleporte
 Players.LocalPlayer.OnTeleport:Connect(function(State)
     if queueteleport then
         queueteleport("loadstring(game:HttpGet('https://raw.githubusercontent.com/cagabostafeia/Havoc-script-auto-farm/refs/heads/main/Havoc-main-1366x768'))()")
@@ -159,7 +159,7 @@ local function sellAll()
 	local realsellbutton = trader:FindFirstChild("dealButtonFrame") and trader.dealButtonFrame:FindFirstChild("dealButton")
 	if not tradesellswitch or not realsellbutton then return end
 	
-	-- Mantido o ajuste fino de +5 para sua tela no switch de Venda
+	-- Aba de Venda
 	for i = 1, 2 do
 		clickObject(tradesellswitch, CLICK_OFFSET_Y + 5)
 		task.wait(0.8) 
@@ -248,7 +248,7 @@ local function waitForMainMenu()
 	end
 end
 
--- Loop Principal Oficial e Corrigido
+-- Loop Principal Atualizado com Janela Dinâmica de 3.5 segundos
 while true do
 	local lobbyBottom = waitForMainMenu()
 	for _ = 1, 5 do
@@ -283,17 +283,27 @@ while true do
 		dialogueFrame = PlayerGui:FindFirstChild("UI") and PlayerGui.UI:FindFirstChild("temp") and PlayerGui.UI.temp:FindFirstChild("dialogueFrame")
 	end
 	
-	-- 1. Executa a venda oficial da sua resolução
+	-- 1. Finaliza a venda dos itens
 	sellAll()
 
-	-- 2. Delay seguro para o servidor computar a grana
-	task.wait(0.5)
+	-- INÍCIO DO CRONÔMETRO DE 3.5 SEGUNDOS
+	local tempoInicio Venda = os.clock()
 
-	-- 3. Executa o organizador de moedas/notas
+	-- 2. Aguarda 0.4s rápidos para o servidor processar a aparição do dinheiro na Bag
+	task.wait(0.4)
+
+	-- 3. Roda a organização das notas de dinheiro
 	organizeCash()
 	
-	-- 4. Server Hop sem travamentos
-	print("[FARM] Sucesso! Pronto para o próximo servidor...")
+	-- 4. Calcula e consome o restante do tempo para fechar EXATAMENTE 3.5 segundos pós-venda
+	local tempoDecorrido = os.clock() - tempoInicioVenda
+	local tempoRestante = 3.5 - tempoDecorrido
+	if tempoRestante > 0 then
+		task.wait(tempoRestante)
+	end
+
+	-- 5. Dispara o teleporte seguro com os dados salvos e dinheiro organizado
+	print("[FARM] 3.5 segundos concluídos! Inventário limpo. Trocando de servidor...")
 	TeleportService:Teleport(game.PlaceId)
 	
 	task.wait(60)

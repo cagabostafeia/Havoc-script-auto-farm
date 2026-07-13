@@ -287,6 +287,6 @@ while true do
 		pcall(function()
 			TeleportService:Teleport(game.PlaceId)
 		end)
-		task.wait(1) 
+		task.wait(0.02) 
 	end
 end

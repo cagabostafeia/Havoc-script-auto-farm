@@ -14,7 +14,7 @@ local CLICK_OFFSET_Y = 50
 if _G.farmLoopRunning then return end
 _G.farmLoopRunning = true
 
--- [NOVO LINK DO GITHUB PARA O SERVER HOP]
+-- [LINK OFICIAL DO GITHUB]
 local queueteleport = queue_on_teleport or (syn and syn.queue_on_teleport) or (fluxus and fluxus.queue_on_teleport)
 
 Players.LocalPlayer.OnTeleport:Connect(function(State)
@@ -77,7 +77,7 @@ local function clickCenter()
 	end)
 end
 
--- [FUNÇÃO INVISÍVEL E INTELIGENTE PARA ORGANIZAR O DINHEIRO]
+-- [FUNÇÃO DE ORGANIZAR ACELERADA]
 local function organizeCash()
 	local storage = game:GetService("ReplicatedStorage"):FindFirstChild("Storage")
 	local gridItemStorage = storage and storage:FindFirstChild("GridItemStorage")
@@ -87,14 +87,12 @@ local function organizeCash()
 	
 	local cashItems = {}
 	
-	-- Varre o inventário e a Stash de forma direta no GridItemStorage
 	for _, container in ipairs(gridItemStorage:GetChildren()) do
 		local itemsFolder = container:FindFirstChild("items")
 		if itemsFolder then
 			for _, item in ipairs(itemsFolder:GetChildren()) do
 				if item.Name == "Cash" or string.find(string.lower(item.Name), "cash") then
 					
-					-- Ignora blocos que já estão cheios (100k) para não gastar tempo
 					local isFull = false
 					local amountCheck = item:FindFirstChild("Value") or item:FindFirstChild("Count") or item:FindFirstChild("Amount")
 					if amountCheck and amountCheck:IsA("ValueBase") and amountCheck.Value >= 100000 then
@@ -111,7 +109,6 @@ local function organizeCash()
 		end
 	end
 	
-	-- Mescla os blocos fragmentados usando a lógica aprovada
 	if #cashItems > 1 then
 		local target = cashItems[1]
 		
@@ -121,9 +118,9 @@ local function organizeCash()
 				pcall(function()
 					inventoryFunction:InvokeServer("stackItem", source, target)
 				end)
-				task.wait(0.2) -- Delay seguro para evitar kick
+				-- DELAY REDUZIDO PARA MÁXIMA VELOCIDADE (50ms)
+				task.wait(0.05) 
 				
-				-- Se o bloco destino lotou, o atual vira o novo destino
 				if source and source.Parent then
 					target = source
 				end
@@ -280,14 +277,13 @@ while true do
 	-- 1. VENDE TUDO
 	sellAll()
 
-	-- 2. ESPERA O SERVIDOR PROCESSAR A VENDA
-	task.wait(1.5)
+	-- 2. ESPERA REDUZIDA: Apenas tempo de o servidor computar e soltar o dinheiro
+	task.wait(0.8)
 
-	-- 3. ORGANIZA O DINHEIRO (RODA TODA VEZ AGORA)
+	-- 3. ORGANIZA O DINHEIRO (Extremamente rápido agora)
 	organizeCash()
-	task.wait(0.5)
-
-	-- 4. SERVER HOP PARA O GITHUB REINICIAR O CICLO
+	
+	-- 4. SERVER HOP INSTANTÂNEO
 	TeleportService:Teleport(game.PlaceId)
 	task.wait(5)
 end

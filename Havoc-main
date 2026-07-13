@@ -8,7 +8,6 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
--- Voltado para 50 conforme você pediu (ajuste calibrado para a sua tela)
 local CLICK_OFFSET_Y = 50 
 
 if _G.farmLoopRunning then return end
@@ -76,6 +75,56 @@ local function clickCenter()
 	end)
 end
 
+local function organizeCash()
+	local storage = game:GetService("ReplicatedStorage"):FindFirstChild("Storage")
+	local gridItemStorage = storage and storage:FindFirstChild("GridItemStorage")
+	local inventoryFunction = storage and storage:FindFirstChild("Events") and storage.Events:FindFirstChild("InventoryFunction")
+	
+	if not gridItemStorage or not inventoryFunction then return end
+	
+	local cashItems = {}
+	
+	for _, container in ipairs(gridItemStorage:GetChildren()) do
+		local itemsFolder = container:FindFirstChild("items")
+		if itemsFolder then
+			for _, item in ipairs(itemsFolder:GetChildren()) do
+				if item.Name == "Cash" or string.find(string.lower(item.Name), "cash") then
+					
+					local isFull = false
+					local amountCheck = item:FindFirstChild("Value") or item:FindFirstChild("Count") or item:FindFirstChild("Amount")
+					if amountCheck and amountCheck:IsA("ValueBase") and amountCheck.Value >= 100000 then
+						isFull = true
+					elseif item:GetAttribute("Amount") == 100000 or item:GetAttribute("Count") == 100000 then
+						isFull = true
+					end
+					
+					if not isFull then
+						table.insert(cashItems, item)
+					end
+				end
+			end
+		end
+	end
+	
+	if #cashItems > 1 then
+		local target = cashItems[1]
+		
+		for i = 2, #cashItems do
+			local source = cashItems[i]
+			if target and source and target.Parent and source.Parent then
+				pcall(function()
+					inventoryFunction:InvokeServer("stackItem", source, target)
+				end)
+				task.wait(0.05) -- Máxima velocidade de fusão
+				
+				if source and source.Parent then
+					target = source
+				end
+			end
+		end
+	end
+end
+
 local function sellAll()
 	local ui = PlayerGui:FindFirstChild("UI")
 	if not ui then return end
@@ -100,7 +149,6 @@ local function sellAll()
 	local realsellbutton = trader:FindFirstChild("dealButtonFrame") and trader.dealButtonFrame:FindFirstChild("dealButton")
 	if not tradesellswitch or not realsellbutton then return end
 	
-	-- Alterado de 3 para 2 cliques para ser mais rápido
 	for i = 1, 2 do
 		clickObject(tradesellswitch)
 		task.wait(0.8) 
@@ -157,7 +205,7 @@ local function sellAll()
 	end
 	
 	clickObject(realsellbutton)
-	task.wait(0.4)
+	task.wait(0.1) -- CORTADO DE 0.4 PARA 0.1s
 end
 
 local function checkPrompt()
@@ -222,9 +270,23 @@ while true do
 		dialogueFrame = PlayerGui:FindFirstChild("UI") and PlayerGui.UI:FindFirstChild("temp") and PlayerGui.UI.temp:FindFirstChild("dialogueFrame")
 	end
 	
+	-- 1. VENDE TUDO
 	sellAll()
 
-	-- Executa o teleporte para reiniciar o ciclo
-	TeleportService:Teleport(game.PlaceId)
-	task.wait(5)
+	-- 2. ESPERA CRÍTICA REDUZIDA AO MÁXIMO (0.3s)
+	task.wait(0.3)
+
+	-- 3. ORGANIZA (Extremamente rápido)
+	organizeCash()
+	
+	-- 4. SERVER HOP INSTANTÂNEO COM SPAM PARA FORÇAR A SAÍDA
+	print("[FARM] Venda e Organização concluídas! Disparando Server Hop IMEDIATAMENTE!")
+	
+	-- Chama o teleporte e tenta repetidamente a cada 1 segundo caso o Roblox engasgue
+	while true do
+		pcall(function()
+			TeleportService:Teleport(game.PlaceId)
+		end)
+		task.wait(1) 
+	end
 end

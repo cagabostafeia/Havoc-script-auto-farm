@@ -36,7 +36,7 @@ local queueteleport = queue_on_teleport or (syn and syn.queue_on_teleport) or (f
 
 Players.LocalPlayer.OnTeleport:Connect(function(State)
     if queueteleport then
-        queueteleport("loadstring(game:HttpGet('https://pastebin.com/raw/83nffeKx'))()")
+        queueteleport("loadstring(game:HttpGet('https://raw.githubusercontent.com/cagabostafeia/Havoc-script-auto-farm/refs/heads/main/Havoc-main'))()")
     end
 end)
 

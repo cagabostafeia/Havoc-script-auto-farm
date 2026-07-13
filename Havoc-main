@@ -7,17 +7,8 @@ local TeleportService = game:GetService("TeleportService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
-local TeleportService = game:GetService("TeleportService")
 
--- Isso aqui resolve o problema de falha. Se o teleporte falhar, ele tenta de novo automaticamente após 1 segundo.
-TeleportService.TeleportInitFailed:Connect(function(plr, result, errorMessage)
-    if plr == Players.LocalPlayer then
-        warn("Falha no teleporte, retentando em 1s... Motivo: " .. tostring(errorMessage))
-        task.wait(1)
-        TeleportService:Teleport(game.PlaceId)
-    end
-end)
-
+-- Voltado para 50 conforme você pediu (ajuste calibrado para a sua tela)
 local CLICK_OFFSET_Y = 50 
 
 if _G.farmLoopRunning then return end
@@ -85,56 +76,6 @@ local function clickCenter()
 	end)
 end
 
-local function organizeCash()
-	local storage = game:GetService("ReplicatedStorage"):FindFirstChild("Storage")
-	local gridItemStorage = storage and storage:FindFirstChild("GridItemStorage")
-	local inventoryFunction = storage and storage:FindFirstChild("Events") and storage.Events:FindFirstChild("InventoryFunction")
-	
-	if not gridItemStorage or not inventoryFunction then return end
-	
-	local cashItems = {}
-	
-	for _, container in ipairs(gridItemStorage:GetChildren()) do
-		local itemsFolder = container:FindFirstChild("items")
-		if itemsFolder then
-			for _, item in ipairs(itemsFolder:GetChildren()) do
-				if item.Name == "Cash" or string.find(string.lower(item.Name), "cash") then
-					
-					local isFull = false
-					local amountCheck = item:FindFirstChild("Value") or item:FindFirstChild("Count") or item:FindFirstChild("Amount")
-					if amountCheck and amountCheck:IsA("ValueBase") and amountCheck.Value >= 100000 then
-						isFull = true
-					elseif item:GetAttribute("Amount") == 100000 or item:GetAttribute("Count") == 100000 then
-						isFull = true
-					end
-					
-					if not isFull then
-						table.insert(cashItems, item)
-					end
-				end
-			end
-		end
-	end
-	
-	if #cashItems > 1 then
-		local target = cashItems[1]
-		
-		for i = 2, #cashItems do
-			local source = cashItems[i]
-			if target and source and target.Parent and source.Parent then
-				pcall(function()
-					inventoryFunction:InvokeServer("stackItem", source, target)
-				end)
-				task.wait(0.05) -- Máxima velocidade de fusão
-				
-				if source and source.Parent then
-					target = source
-				end
-			end
-		end
-	end
-end
-
 local function sellAll()
 	local ui = PlayerGui:FindFirstChild("UI")
 	if not ui then return end
@@ -159,6 +100,7 @@ local function sellAll()
 	local realsellbutton = trader:FindFirstChild("dealButtonFrame") and trader.dealButtonFrame:FindFirstChild("dealButton")
 	if not tradesellswitch or not realsellbutton then return end
 	
+	-- Alterado de 3 para 2 cliques para ser mais rápido
 	for i = 1, 2 do
 		clickObject(tradesellswitch)
 		task.wait(0.8) 
@@ -215,7 +157,7 @@ local function sellAll()
 	end
 	
 	clickObject(realsellbutton)
-	task.wait(0.1) -- CORTADO DE 0.4 PARA 0.1s
+	task.wait(0.4)
 end
 
 local function checkPrompt()
@@ -280,66 +222,9 @@ while true do
 		dialogueFrame = PlayerGui:FindFirstChild("UI") and PlayerGui.UI:FindFirstChild("temp") and PlayerGui.UI.temp:FindFirstChild("dialogueFrame")
 	end
 	
-	-- 1. VENDE TUDO
 	sellAll()
 
-	-- 2. ESPERA CRÍTICA REDUZIDA AO MÁXIMO (0.3s)
-	task.wait(0.3)
-
-	-- 3. ORGANIZA (Extremamente rápido)
-	organizeCash()
-	
-	-- 4. SERVER HOP INSTANTÂNEO COM SPAM PARA FORÇAR A SAÍDA
-	print("[FARM] Venda e Organização concluídas! Disparando Server Hop IMEDIATAMENTE!")
-	
--- Loop Principal
-while true do
-	local lobbyBottom = waitForMainMenu()
-	for _ = 1, 5 do
-		if checkPrompt() then break end
-		task.wait(0.1)
-	end
-	local traders = lobbyBottom:FindFirstChild("main") and lobbyBottom.main:FindFirstChild("traders")
-	if traders then
-		clickObject(traders)
-		task.wait(0.4)
-	end
-	local traderList = PlayerGui:FindFirstChild("UI") and PlayerGui.UI:FindFirstChild("HUD") and PlayerGui.UI.HUD:FindFirstChild("traderListFrame")
-	if traderList then
-		local contents = traderList:FindFirstChild("contents")
-		if contents then
-			local dragov = contents:FindFirstChild("Dragov") or contents:FindFirstChildWhichIsA("TextButton")
-			if dragov then
-				clickObject(dragov)
-				task.wait(0.5)
-			end
-		end
-	end
-	local dialogueFrame = PlayerGui:FindFirstChild("UI") and PlayerGui.UI:FindFirstChild("temp") and PlayerGui.UI.temp:FindFirstChild("dialogueFrame")
-	while dialogueFrame do
-		clickCenter()
-		task.wait(0.1)
-		local choice1 = dialogueFrame:FindFirstChild("main") and dialogueFrame.main:FindFirstChild("dialogueChoices") and dialogueFrame.main.dialogueChoices:FindFirstChild("1")
-		if choice1 then
-			clickObject(choice1)
-			task.wait(0.15)
-		end
-		dialogueFrame = PlayerGui:FindFirstChild("UI") and PlayerGui.UI:FindFirstChild("temp") and PlayerGui.UI.temp:FindFirstChild("dialogueFrame")
-	end
-	
-	-- 1. VENDE TUDO
-	sellAll()
-
-	-- 2. ESPERA APENAS O NECESSÁRIO PARA O SERVER PROCESSAR A VENDA
-	task.wait(0.5)
-
-	-- 3. ORGANIZA O DINHEIRO
-	organizeCash()
-	
-	-- 4. SERVER HOP INSTANTÂNEO (UMA CHAMADA SÓ)
-	print("[FARM] Venda e Organização concluídas! Disparando Server Hop agora...")
+	-- Executa o teleporte para reiniciar o ciclo
 	TeleportService:Teleport(game.PlaceId)
-	
-	-- O script não precisa de loop aqui. Se der erro, o TeleportInitFailed lá no topo vai cuidar de você.
-	task.wait(60) -- Apenas um "delay" para evitar que o script continue rodando caso o teleporte demore.
+	task.wait(5)
 end

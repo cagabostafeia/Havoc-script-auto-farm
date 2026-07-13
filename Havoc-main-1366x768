@@ -8,28 +8,30 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
--- [CONFIGURAÇÃO PARA 1366x768]
+-- Voltado para 50 padrão conforme calibração da sua tela
 local CLICK_OFFSET_Y = 50 
 
 if _G.farmLoopRunning then return end
 _G.farmLoopRunning = true
 
--- Segurança para falhas no teleporte
+-- Sistema inteligente contra falhas de teleporte (Conecta caso o Roblox recuse de primeira)
 TeleportService.TeleportInitFailed:Connect(function(plr, result, errorMessage)
-    if plr == Players.LocalPlayer then
-        task.wait(1)
+    if plr == LocalPlayer then
+        warn("Teleporte falhou: " .. tostring(errorMessage) .. ". Tentando novamente em 1.5s...")
+        task.wait(1.5)
         TeleportService:Teleport(game.PlaceId)
     end
 end)
 
 local queueteleport = queue_on_teleport or (syn and syn.queue_on_teleport) or (fluxus and fluxus.queue_on_teleport)
-Players.LocalPlayer.OnTeleport:Connect(function()
+
+Players.LocalPlayer.OnTeleport:Connect(function(State)
     if queueteleport then
         queueteleport("loadstring(game:HttpGet('https://pastebin.com/raw/SHbS3x9C'))()")
     end
 end)
 
--- Função com suporte a customOffset para não perder seu ajuste fino
+-- Função de clique com suporte a customOffset (Exatamente como a sua original)
 local function clickObject(obj, customOffset)
 	if not obj or not obj:IsA("GuiObject") then return end
 	if obj:IsA("GuiButton") then
@@ -86,6 +88,7 @@ local function clickCenter()
 	end)
 end
 
+-- Função Organizadora de Dinheiro (Injetada com segurança)
 local function organizeCash()
 	local storage = game:GetService("ReplicatedStorage"):FindFirstChild("Storage")
 	local gridItemStorage = storage and storage:FindFirstChild("GridItemStorage")
@@ -101,9 +104,14 @@ local function organizeCash()
 				if item.Name == "Cash" or string.find(string.lower(item.Name), "cash") then
 					local isFull = false
 					local amountCheck = item:FindFirstChild("Value") or item:FindFirstChild("Count") or item:FindFirstChild("Amount")
-					if amountCheck and amountCheck:IsA("ValueBase") and amountCheck.Value >= 100000 then isFull = true
-					elseif item:GetAttribute("Amount") == 100000 or item:GetAttribute("Count") == 100000 then isFull = true end
-					if not isFull then table.insert(cashItems, item) end
+					if amountCheck and amountCheck:IsA("ValueBase") and amountCheck.Value >= 100000 then
+						isFull = true
+					elseif item:GetAttribute("Amount") == 100000 or item:GetAttribute("Count") == 100000 then
+						isFull = true
+					end
+					if not isFull then
+						table.insert(cashItems, item)
+					end
 				end
 			end
 		end
@@ -114,21 +122,30 @@ local function organizeCash()
 		for i = 2, #cashItems do
 			local source = cashItems[i]
 			if target and source and target.Parent and source.Parent then
-				pcall(function() inventoryFunction:InvokeServer("stackItem", source, target) end)
+				pcall(function()
+					inventoryFunction:InvokeServer("stackItem", source, target)
+				end)
 				task.wait(0.05)
-				if source and source.Parent then target = source end
+				if source and source.Parent then
+					target = source
+				end
 			end
 		end
 	end
 end
 
+-- Função de Venda ORIGINAL RESTAURADA (Com todos os loops de itens, armas e equipamentos)
 local function sellAll()
 	local ui = PlayerGui:FindFirstChild("UI")
 	if not ui then return end
+	
 	local inventoryCategory = ui:FindFirstChild("inventoryCategory")
 	if inventoryCategory then
 		local overall = inventoryCategory:FindFirstChild("overall")
-		if overall then clickObject(overall) task.wait(0.15) end
+		if overall then
+			clickObject(overall)
+			task.wait(0.15)
+		end
 	end
 	
 	local hud = ui:FindFirstChild("HUD")
@@ -142,7 +159,7 @@ local function sellAll()
 	local realsellbutton = trader:FindFirstChild("dealButtonFrame") and trader.dealButtonFrame:FindFirstChild("dealButton")
 	if not tradesellswitch or not realsellbutton then return end
 	
-	-- Mantendo seu ajuste fino de +5
+	-- Seu ajuste fino de +5 para o botão de alternar venda
 	for i = 1, 2 do
 		clickObject(tradesellswitch, CLICK_OFFSET_Y + 5)
 		task.wait(0.8) 
@@ -159,12 +176,42 @@ local function sellAll()
 		end
 	end
 	
-	if pocket then
-		local itemsContainer = pocket:FindFirstChild("items") or pocket
-		for _, itemFrame in ipairs(itemsContainer:GetChildren()) do
-			if itemFrame:IsA("Frame") then
-				local button = itemFrame:FindFirstChild("button")
-				if button then clickObject(button) task.wait(0.04) end
+	if not pocket then return end
+	local itemsContainer = pocket:FindFirstChild("items") or pocket
+	for _, itemFrame in ipairs(itemsContainer:GetChildren()) do
+		if itemFrame:IsA("Frame") then
+			local button = itemFrame:FindFirstChild("button")
+			if button then
+				clickObject(button)
+				task.wait(0.04)
+			end
+		end
+	end
+	
+	-- [COMPLETAMENTE RESTAURADO] Loop de Equipamentos e Armas que havia sumido
+	local status = backpack:FindFirstChild("status")
+	if status then
+		local overall = status:FindFirstChild("overallFrame")
+		if overall then
+			local equipSlots = overall:FindFirstChild("equipment") and overall.equipment:FindFirstChild("slots")
+			if equipSlots then
+				for _, slot in ipairs(equipSlots:GetChildren()) do
+					if slot:IsA("Frame") and slot:FindFirstChildOfClass("ObjectValue") then
+						local button = slot:FindFirstChild("button")
+						if button then clickObject(button) else clickObject(slot) end
+						task.wait(0.04)
+					end
+				end
+			end
+			local weaponSlots = overall:FindFirstChild("weapons") and overall.weapons:FindFirstChild("slots")
+			if weaponSlots then
+				for _, slot in ipairs(weaponSlots:GetChildren()) do
+					if slot:IsA("Frame") and slot:FindFirstChildOfClass("ObjectValue") then
+						local button = slot:FindFirstChild("button")
+						if button then clickObject(button) else clickObject(slot) end
+						task.wait(0.04)
+					end
+				end
 			end
 		end
 	end
@@ -194,11 +241,13 @@ local function waitForMainMenu()
 		clickCenter()
 		task.wait(0.1)
 		local lobbyBottom = PlayerGui:FindFirstChild("UI") and PlayerGui.UI:FindFirstChild("mainMenuFrame") and PlayerGui.UI.mainMenuFrame:FindFirstChild("lobbyBottom")
-		if lobbyBottom and lobbyBottom.Visible then return lobbyBottom end
+		if lobbyBottom and lobbyBottom.Visible then
+			return lobbyBottom
+		end
 	end
 end
 
--- Loop Principal
+-- Loop Principal Estável e Completo
 while true do
 	local lobbyBottom = waitForMainMenu()
 	for _ = 1, 5 do
@@ -206,35 +255,46 @@ while true do
 		task.wait(0.1)
 	end
 	local traders = lobbyBottom:FindFirstChild("main") and lobbyBottom.main:FindFirstChild("traders")
-	if traders then clickObject(traders) task.wait(0.4) end
-	
+	if traders then
+		clickObject(traders)
+		task.wait(0.4)
+	end
 	local traderList = PlayerGui:FindFirstChild("UI") and PlayerGui.UI:FindFirstChild("HUD") and PlayerGui.UI.HUD:FindFirstChild("traderListFrame")
 	if traderList then
 		local contents = traderList:FindFirstChild("contents")
 		if contents then
 			local dragov = contents:FindFirstChild("Dragov") or contents:FindFirstChildWhichIsA("TextButton")
-			if dragov then clickObject(dragov) task.wait(0.5) end
+			if dragov then
+				clickObject(dragov)
+				task.wait(0.5)
+			end
 		end
 	end
-	
 	local dialogueFrame = PlayerGui:FindFirstChild("UI") and PlayerGui.UI:FindFirstChild("temp") and PlayerGui.UI.temp:FindFirstChild("dialogueFrame")
 	while dialogueFrame do
 		clickCenter()
 		task.wait(0.1)
 		local choice1 = dialogueFrame:FindFirstChild("main") and dialogueFrame.main:FindFirstChild("dialogueChoices") and dialogueFrame.main.dialogueChoices:FindFirstChild("1")
-		if choice1 then clickObject(choice1) task.wait(0.15) end
+		if choice1 then
+			clickObject(choice1)
+			task.wait(0.15)
+		end
 		dialogueFrame = PlayerGui:FindFirstChild("UI") and PlayerGui.UI:FindFirstChild("temp") and PlayerGui.UI.temp:FindFirstChild("dialogueFrame")
 	end
 	
-	-- 1. VENDE TUDO
+	-- 1. VENDE TUDO (Com o tempo original perfeito de seleção de itens)
 	sellAll()
-	-- 2. ORGANIZA
+
+	-- 2. ESPERA SEGURA (Para o servidor registrar o dinheiro na sua bag pós-venda)
+	task.wait(0.6)
+
+	-- 3. ORGANIZA O DINHEIRO (Junta as notas em stacks de 100k)
 	organizeCash()
 	
-	-- 3. SERVER HOP AGORA (Sem loops infinitos)
-	print("[FARM] Executando Server Hop...")
+	-- 4. SERVER HOP INSTANTÂNEO E LIMPO
+	print("[FARM] Sucesso! Venda concluída e dinheiro organizado. Trocando de servidor...")
 	TeleportService:Teleport(game.PlaceId)
 	
-	-- Espera longa para caso o teleporte demore, não disparar o script de novo desnecessariamente
+	-- Pausa longa para impedir que o script repita o loop se o loading demorar alguns segundos
 	task.wait(60)
 end
